@@ -11,7 +11,7 @@
 #-------------------------------------------------------------------------------
 import arcpy
 import os, sys, xlwt
-import xlrd
+import argparse
 from xlrd import open_workbook
 
 class aSurvey:
@@ -53,25 +53,41 @@ def adjCoord(origin_x, xmeas, origin_y, ymeas,side):
 # tape measure to the feature (Lateral Measure). The "Side" field collects the direction of the lateral measure. 
 # The rest of the columns are attributes that describe the feature at the determined location (i.e., can be changed in
 # output schema to match the data collected).
-input_book = arcpy.GetParameterAsText(0)
-if not input_book or input_book == '':
-    input_book = r"H:\Cmac\Geneaology\Studies and Projects\07_cemetery_surveys\Survey_March2019.xlsx"
+if os.path.basename(sys.executable) in ['ArcGISPro.exe', 'ArcSOC.exe']:
+    
+    input_book = arcpy.GetParameterAsText(0)
+    origin_x = arcpy.GetParameter(1)
+    origin_y = arcpy.GetParameter(2)
+    sr = arcpy.GetParameter(3)    # Spatial Reference (NC State Plane). 
+    output_fc = arcpy.GetParameter(4)
 
-origin_x = arcpy.GetParameter(1)
-if not origin_x or origin_x == '':
-    origin_x = 1243912.568
+else:
+    
+    # Create an ArgumentParser object
+    parser = argparse.ArgumentParser(description='Reads in data from excel with: linear_ft, lateral_ft,L/R side,ID,Type,Desc,method,date,surveyor')
 
-origin_y = arcpy.GetParameter(2)
-if not origin_y or origin_y == '':
-    origin_y = 928660.376
+    # Add arguments
+    parser.add_argument('arg1', type=str, help='Input full path and name of Excel workbook')
+    parser.add_argument('arg2', type=float, help='X (lon) coordinate using state plane (feet) projection')
+    parser.add_argument('arg3', type=float, help='Y (lat) coordinate using state plane (feet) projection')
+    parser.add_argument('arg4', type=float, default=2264, help='WKID of coordinate system (Default is NC State Plane 2264)')
+    parser.add_argument('arg5', type=float, default='', help='Output feature class. the data will be APPENDED.')
 
-sr = arcpy.GetParameter(3)    # Spatial Reference (NC State Plane). 
-if not sr or sr == '':
-    sr = arcpy.SpatialReference(2264)
+    # Parse the command-line arguments
+    args = parser.parse_args()
 
-output_fc = arcpy.GetParameter(4)
-if not output_fc or output_fc == '':
-    output_fc = r"H:\Cmac\Geneaology\Studies and Projects\07_cemetery_surveys\site_data.gdb\survey_points"
+    # Access the parsed arguments
+    print("Argument 1:", args.arg1)
+    print("Argument 2:", args.arg2)
+    print("Argument 3:", args.arg3)
+    print("Argument 4:", args.arg4)
+    print("Argument 5:", args.arg5)
+    
+    input_book = args.arg1
+    origin_x = args.arg2
+    origin_y = args.arg3
+    sr = arcpy.SpatialReference(args.arg4)
+    output_fc = args.arg5
 
 arcpy.env.workspace = os.path.dirname(output_fc)
 arcpy.SpatialReference = sr
